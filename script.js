@@ -20,34 +20,43 @@ controls.update();
 
 
 // Add objects to scene
-const geometry = new THREE.IcosahedronGeometry(10, 20);
-const material = new THREE.MeshNormalMaterial({ wireframe: false, flatShading: true, side: THREE.DoubleSide });
-const sphere = new THREE.Mesh(geometry, material);
+const sphere = new THREE.Mesh();
 scene.add(sphere);
-const pos = geometry.attributes.position;
-const normal = geometry.attributes.normal;
+
 const noise = new SimplexNoise();
-const smoothness = 0.2;
-const height = 1;
+let scale = 0.2;
+let height = 1;
 
-for (let i=0; i<pos.count; i++)
+function updateMesh()
 {
-  const value = noise.noise3d(
-    pos.getX(i)*smoothness,
-    pos.getY(i)*smoothness,
-    pos.getZ(i)*smoothness)-0.5;
+  const material = new THREE.MeshNormalMaterial({ wireframe: false, flatShading: true, side: THREE.DoubleSide });
+  const geometry = new THREE.IcosahedronGeometry(10, 20);
+  let pos = geometry.attributes.position;
+  let normal = geometry.attributes.normal;
 
-  pos.setXYZ(
-    i,
-    pos.getX(i) + normal.getX(i) * value * height,
-    pos.getY(i) + normal.getY(i) * value * height,
-    pos.getZ(i) + normal.getZ(i) * value * height
-  );
+  for (let i=0; i<pos.count; i++)
+  {
+    const value = noise.noise3d(
+      pos.getX(i)*scale,
+      pos.getY(i)*scale,
+      pos.getZ(i)*scale)-0.5;
+
+    pos.setXYZ(
+      i,
+      pos.getX(i) + normal.getX(i) * value * height,
+      pos.getY(i) + normal.getY(i) * value * height,
+      pos.getZ(i) + normal.getZ(i) * value * height
+    );
+  }
+  pos.needsUpdate = true;
+  geometry.computeVertexNormals();
+  sphere.geometry = geometry;
+  sphere.material = material;
 }
-pos.needsUpdate = true;
-geometry.computeVertexNormals();
+updateMesh();
 
-
+document.getElementById("height").addEventListener("input", (event) => {height = document.getElementById("height").value;updateMesh();});
+document.getElementById("scale").addEventListener("input", (event) => {scale = document.getElementById("scale").value;updateMesh();});
 // Render scene
 function render() {
     renderer.render(scene, camera);
