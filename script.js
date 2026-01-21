@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
 
 // Initialize renderer to canvas and add a scene
 const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#canvas"), antialias: true });
@@ -20,25 +21,30 @@ controls.update();
 
 // Add objects to scene
 const geometry = new THREE.IcosahedronGeometry(10, 20);
-const material = new THREE.MeshNormalMaterial({ wireframe: false, flatShading: true });
+const material = new THREE.MeshNormalMaterial({ wireframe: false, flatShading: true, side: THREE.DoubleSide });
 const sphere = new THREE.Mesh(geometry, material);
 scene.add(sphere);
-
 const pos = geometry.attributes.position;
 const normal = geometry.attributes.normal;
+const noise = new SimplexNoise();
+const smoothness = 0.2;
+const height = 1;
 
 for (let i=0; i<pos.count; i++)
 {
-  const value = 0;
+  const value = noise.noise3d(
+    pos.getX(i)*smoothness,
+    pos.getY(i)*smoothness,
+    pos.getZ(i)*smoothness)-0.5;
 
   pos.setXYZ(
     i,
-    pos.getX(i) + normal.getX(i) * value,
-    pos.getY(i) + normal.getY(i) * value,
-    pos.getZ(i) + normal.getZ(i) * value
+    pos.getX(i) + normal.getX(i) * value * height,
+    pos.getY(i) + normal.getY(i) * value * height,
+    pos.getZ(i) + normal.getZ(i) * value * height
   );
 }
-pos.needsUpdate();
+pos.needsUpdate = true;
 geometry.computeVertexNormals();
 
 
