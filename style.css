@@ -27,14 +27,3 @@ canvas {
     padding: 1rem;
     background-color: lightgray;
 }
-
-#update{
-    position: fixed;
-    bottom: 1rem;
-    right: 1rem;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    background-color: lightgreen;
-    border: none;
-    cursor: pointer;
-}

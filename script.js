@@ -57,6 +57,7 @@ updateMesh();
 
 document.getElementById("height").addEventListener("input", (event) => {height = document.getElementById("height").value;updateMesh();});
 document.getElementById("scale").addEventListener("input", (event) => {scale = document.getElementById("scale").value;updateMesh();});
+
 // Render scene
 function render() {
     renderer.render(scene, camera);
