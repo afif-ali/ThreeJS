@@ -10,19 +10,36 @@ const scene = new THREE.Scene();
 
 // Create camera and add orbit controls
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(5, 5, 5);
+camera.position.set(15, 15, 15);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = false;
-controls.maxDistance = 20;
-controls.minDistance = 2;
+controls.maxDistance = 100;
+controls.minDistance = 12;
 controls.update();
 
 
 // Add objects to scene
-const geometry = new THREE.IcosahedronGeometry(2, 5);
-const material = new THREE.MeshNormalMaterial({ color: 0xffffff, wireframe: true });
+const geometry = new THREE.IcosahedronGeometry(10, 20);
+const material = new THREE.MeshNormalMaterial({ wireframe: false, flatShading: true });
 const sphere = new THREE.Mesh(geometry, material);
 scene.add(sphere);
+
+const pos = geometry.attributes.position;
+const normal = geometry.attributes.normal;
+
+for (let i=0; i<pos.count; i++)
+{
+  const value = 0;
+
+  pos.setXYZ(
+    i,
+    pos.getX(i) + normal.getX(i) * value,
+    pos.getY(i) + normal.getY(i) * value,
+    pos.getZ(i) + normal.getZ(i) * value
+  );
+}
+pos.needsUpdate();
+geometry.computeVertexNormals();
 
 
 // Render scene
