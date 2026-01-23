@@ -15,7 +15,7 @@ camera.position.set(15, 15, 15);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = false;
 controls.maxDistance = 100;
-controls.minDistance = 5;
+controls.minDistance = 15;
 controls.update();
 
 
@@ -31,14 +31,15 @@ let scale = document.getElementById("scale").value;
 let detail = document.getElementById("detail").value;
 let octave = document.getElementById("octave").value;
 let water_level = document.getElementById("water_level").value;
+let render_mode = document.getElementById("render_mode").value;
+
 
 function updateMesh()
 {
   // Terrain
-  const material = new THREE.MeshNormalMaterial({ flatShading: true });
-  const geometry = new THREE.IcosahedronGeometry(10, Math.round(detail));
-  let pos = geometry.attributes.position;
-  let normal = geometry.attributes.normal;
+  const terrain_geometry = new THREE.IcosahedronGeometry(10, Math.round(detail));
+  let pos = terrain_geometry.attributes.position;
+  let normal = terrain_geometry.attributes.normal;
   
   for (let i=0; i<pos.count; i++)
   {
@@ -57,14 +58,35 @@ function updateMesh()
     }
   }
   pos.needsUpdate = true;
-  geometry.computeVertexNormals();
-  terrain.geometry = geometry;
-  terrain.material = material;
+  terrain_geometry.computeVertexNormals();
+  terrain.geometry = terrain_geometry;
   
   // Water
   const water_geometry = new THREE.IcosahedronGeometry(10 + parseFloat(water_level), Math.round(detail));
-  const water_material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
   water.geometry = water_geometry;
+
+  // Materials
+  let terrain_material;
+  let water_material;
+
+  if (render_mode == "lit") {
+    terrain_material = new THREE.MeshPhongMaterial({ flatShading: true });
+    water_material = new THREE.MeshPhongMaterial({ flatShading: true });
+  }
+  else if (render_mode == "normal") {
+    terrain_material = new THREE.MeshNormalMaterial({ flatShading: true });
+    water_material = new THREE.MeshNormalMaterial({ flatShading: true });
+  }
+  else if (render_mode == "flat") {
+    terrain_material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: false });
+    water_material = new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: false });
+  }
+  else if (render_mode == "wireframe") {
+    terrain_material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    water_material = new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true });
+  }
+
+  terrain.material = terrain_material;
   water.material = water_material;
 }
 updateMesh();
@@ -74,6 +96,7 @@ document.getElementById("scale").addEventListener("input", (event) => {scale = d
 document.getElementById("detail").addEventListener("input", (event) => {detail = document.getElementById("detail").value;updateMesh();});
 document.getElementById("octave").addEventListener("input", (event) => {octave = document.getElementById("octave").value;updateMesh();});
 document.getElementById("water_level").addEventListener("input", (event) => {water_level = document.getElementById("water_level").value;updateMesh();});
+document.getElementById("render_mode").addEventListener("input", (event) => {render_mode = document.getElementById("render_mode").value;updateMesh();});
 
 // Render scene
 function render() {
