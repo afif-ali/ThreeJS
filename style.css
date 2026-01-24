@@ -26,4 +26,5 @@ canvas {
     height: calc(100vh - 4rem);
     padding: 1rem;
     background-color: lightgray;
+    overflow: scroll;
 }
