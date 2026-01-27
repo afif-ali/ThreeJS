@@ -1,126 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
-
-// Initialize renderer to canvas and add a scene
-const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#canvas"), antialias: true, context: canvas.getContext('webgl2') });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setAnimationLoop( render );
-
-const scene = new THREE.Scene();
-
-// Create camera and add orbit controls
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(15, 15, 15);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enablePan = false;
-controls.maxDistance = 100;
-controls.minDistance = 15;
-controls.update();
-
-
-// Add objects to scene
-const grid = new THREE.GridHelper(100,100);
-scene.add(grid);
-
-const terrain = new THREE.Mesh();
-scene.add(terrain);
-const water = new THREE.Mesh();
-scene.add(water);
-
-let height = document.getElementById("height").value;
-let scale = document.getElementById("scale").value;
-let detail = document.getElementById("detail").value;
-let octave = document.getElementById("octave").value;
-let water_level = document.getElementById("water_level").value;
-let render_mode = document.getElementById("render_mode").value;
-let sun_color = document.getElementById("sun_color").value;
-let sun_intensity = document.getElementById("sun_intensity").value;
-
-
-
-const terrain_geometry = new THREE.IcosahedronGeometry(10, Math.round(detail));
-const water_geometry = new THREE.IcosahedronGeometry(10, Math.round(detail));
-
-const terrain_material = new THREE.MeshNormalMaterial();
-const water_material = new THREE.MeshNormalMaterial();
-
-terrain_material.onBeforeCompile = (shader) => {
-  shader.uniforms.uScale = { value: document.getElementById("scale").value };
-  shader.uniforms.uHeight = { value: document.getElementById("height").value };
-  document.getElementById("height").addEventListener("input", (event) => {shader.uniforms.uHeight.value = document.getElementById("height").value;});
-  document.getElementById("scale").addEventListener("input", (event) => {shader.uniforms.uScale.value = document.getElementById("scale").value;});
-  //document.getElementById("detail").addEventListener("input", (event) => {detail = document.getElementById("detail").value;});
-  //document.getElementById("octave").addEventListener("input", (event) => {octave = document.getElementById("octave").value;});
-  //document.getElementById("water_level").addEventListener("input", (event) => {water_level = document.getElementById("water_level").value;});
-  //document.getElementById("render_mode").addEventListener("input", (event) => {render_mode = document.getElementById("render_mode").value;});
-  //document.getElementById("sun_color").addEventListener("input", (event) => {sun_color = document.getElementById("sun_color").value;});
-  //document.getElementById("sun_intensity").addEventListener("input", (event) => {sun_intensity = document.getElementById("sun_intensity").value;});
-
-  shader.vertexShader = `
-    uniform sampler3D uNoiseTex;
-    uniform float uHeight;
-    uniform float uScale;
-    ` + shader.vertexShader;
-  shader.vertexShader = noiseshadersource + shader.vertexShader;
-  shader.vertexShader = shader.vertexShader.replace(
-    '#include <begin_vertex>',
-    `
-    #include <begin_vertex>
-    transformed = position + normal * cnoise(position * uScale) * uHeight;
-    `
-  );
-};
-
-terrain.geometry = terrain_geometry;
-terrain.material = terrain_material;
-
-
-function updateMesh()
-{
-  // Terrain
-  const terrain_geometry = new THREE.IcosahedronGeometry(10, Math.round(detail));
-  let pos = terrain_geometry.attributes.position;
-  let normal = terrain_geometry.attributes.normal;
-  
-  for (let i=0; i<pos.count; i++)
-    {
-    for (let j=1; j<=octave; j++)
-    {
-      const value = noise.noise3d(
-        pos.getX(i)*scale*j,
-        pos.getY(i)*scale*j,
-        pos.getZ(i)*scale*j);
-      pos.setXYZ(
-        i,
-        pos.getX(i) + normal.getX(i) * value * height/(j*j),
-        pos.getY(i) + normal.getY(i) * value * height/(j*j),
-        pos.getZ(i) + normal.getZ(i) * value * height/(j*j)
-      );
-    }
-  }
-  pos.needsUpdate = true;
-  terrain_geometry.computeVertexNormals();
-  terrain.geometry = terrain_geometry;
-  
-  // Water
-  const water_geometry = new THREE.IcosahedronGeometry(10 + parseFloat(water_level), Math.round(detail));
-  water.geometry = water_geometry;
-}
-
-// Render scene
-function render() {
-  renderer.render(scene, camera);
-}
-
-// Handle window resize
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-window.addEventListener('resize', onWindowResize, false);
-
 
 
 const noiseshadersource = `
@@ -209,3 +88,192 @@ float cnoise(vec3 P)
   return 2.2 * n_xyz;
 }
 `;
+
+// Initialize renderer to canvas and add a scene
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#canvas"), antialias: true, context: canvas.getContext('webgl2') });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setAnimationLoop( render );
+
+const scene = new THREE.Scene();
+scene.background = 0x000000;
+
+// Create camera and add orbit controls
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(15, 15, 15);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enablePan = false;
+controls.maxDistance = 100;
+controls.minDistance = 15;
+controls.update();
+
+
+// Add objects to scene
+const ambientLight = new THREE.AmbientLight( 0x404040 );
+scene.add( ambientLight );
+
+const directionalLight = new THREE.DirectionalLight( document.getElementById("sun_color").value, document.getElementById("sun_intensity").value);
+scene.add( directionalLight );
+
+document.getElementById("sun_color").addEventListener("input", (event) => {directionalLight.color.set(event.target.value);});
+document.getElementById("sun_intensity").addEventListener("input", (event) => {directionalLight.intensity = event.target.value;});
+
+const terrain = new THREE.Mesh();
+scene.add(terrain);
+const water = new THREE.Mesh();
+scene.add(water);
+
+terrain.geometry = new THREE.IcosahedronGeometry(10, Math.round(document.getElementById("detail").value));
+water.geometry = new THREE.IcosahedronGeometry(10, Math.round(document.getElementById("detail").value));
+document.getElementById("detail").addEventListener("input", (event) => {
+  terrain.geometry = new THREE.IcosahedronGeometry(10, Math.round(event.target.value));
+  terrain.geometry.needsUpdate=true;
+  water.geometry = new THREE.IcosahedronGeometry(10, Math.round(event.target.value));
+  water.geometry.needsUpdate=true;
+});
+
+let watershader = null;
+function updateShaders(render_mode) {
+  if (render_mode == "lit") {
+    terrain.material = new THREE.MeshPhongMaterial({flatShading:true});
+    water.material = new THREE.MeshPhongMaterial({flatShading:true});
+  } else if (render_mode == "normal") {
+    terrain.material = new THREE.MeshNormalMaterial({flatShading:true});
+    water.material = new THREE.MeshNormalMaterial({flatShading:true});
+  } else if (render_mode == "flat") {
+    terrain.material = new THREE.MeshToonMaterial({wireframe:false});
+    water.material = new THREE.MeshToonMaterial({wireframe:false});
+  } else if (render_mode == "wireframe") {
+    terrain.material = new THREE.MeshBasicMaterial({wireframe:true});
+    water.material = new THREE.MeshBasicMaterial({wireframe:true});
+  }
+
+function getInputColorVec3(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  return new THREE.Vector3(r, g, b);
+}
+
+  terrain.material.onBeforeCompile = (shader) => {
+    shader.uniforms.uScale = { value: document.getElementById("scale").value };
+    shader.uniforms.uHeight = { value: document.getElementById("height").value };
+    shader.uniforms.uOctaves = { value: document.getElementById("octaves").value };
+    shader.uniforms.uLandColor = { value: getInputColorVec3(document.getElementById("land_color").value) };
+
+    document.getElementById("height").addEventListener("input", (event) => {shader.uniforms.uHeight.value = document.getElementById("height").value;});
+    document.getElementById("scale").addEventListener("input", (event) => {shader.uniforms.uScale.value = document.getElementById("scale").value;});
+    document.getElementById("octaves").addEventListener("input", (event) => {shader.uniforms.uOctaves.value = document.getElementById("octaves").value;});
+    document.getElementById("land_color").addEventListener("input", (event) => {shader.uniforms.uLandColor.value = getInputColorVec3(document.getElementById("land_color").value);});
+    
+    shader.vertexShader = `
+    uniform sampler3D uNoiseTex;
+    uniform float uHeight;
+    uniform float uScale;
+    uniform float uOctaves;
+    ` + shader.vertexShader;
+    shader.vertexShader = noiseshadersource + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace(
+      'void main() {',
+      `
+      vec3 f(vec3 position) {
+        vec3 result = position;
+        for (float j=1.0; j<=uOctaves; j+=1.0)
+        {
+          result += normal * cnoise(position * uScale * j) * uHeight/(j*j);
+        }
+        return result;
+      }
+
+      void main() {
+      `
+    )
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      `
+      #include <begin_vertex>
+
+      transformed = f(position);
+
+      `
+    );
+    shader.fragmentShader =
+    `
+    uniform vec3 uLandColor;
+    ` + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'diffuseColor = vec4( diffuse, opacity );',
+      `
+      diffuseColor = vec4( diffuse * uLandColor , opacity);
+      `
+    )
+  };
+
+  water.material.onBeforeCompile = (shader) => {
+    watershader = shader;
+
+    shader.uniforms.uWaterLevel = { value: document.getElementById("water_level").value };
+    shader.uniforms.uAmplitude = { value: document.getElementById("amplitude").value };
+    shader.uniforms.uFrequency = { value: document.getElementById("frequency").value };
+    shader.uniforms.uSpeed = { value: document.getElementById("speed").value };
+    shader.uniforms.uTime = { value: 0.0 };
+    shader.uniforms.uWaterColor = { value: getInputColorVec3(document.getElementById("water_color").value) };
+    
+    document.getElementById("water_level").addEventListener("input", (event) => {shader.uniforms.uWaterLevel.value = document.getElementById("water_level").value;});
+    document.getElementById("amplitude").addEventListener("input", (event) => {shader.uniforms.uAmplitude.value = document.getElementById("amplitude").value; });
+    document.getElementById("frequency").addEventListener("input", (event) => {shader.uniforms.uFrequency.value = document.getElementById("frequency").value; });
+    document.getElementById("speed").addEventListener("input", (event) => {shader.uniforms.uSpeed.value = document.getElementById("speed").value; });
+    document.getElementById("water_color").addEventListener("input", (event) => {shader.uniforms.uWaterColor.value = getInputColorVec3(document.getElementById("water_color").value);});
+    
+    shader.vertexShader = `
+    uniform float uWaterLevel;
+    uniform float uAmplitude;
+    uniform float uFrequency;
+    uniform float uSpeed;
+    uniform float uTime;
+    ` + shader.vertexShader;
+    shader.vertexShader = noiseshadersource + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      `
+      #include <begin_vertex>
+      float noise_displace_1 = uAmplitude * cnoise(position * uFrequency + vec3(1.0) * uSpeed * uTime);
+      float noise_displace_2 = uAmplitude * cnoise(position * uFrequency * 0.5 - vec3(1.0) * uSpeed * uTime);
+      transformed = position + normal * (uWaterLevel + noise_displace_1 + noise_displace_2);
+      `
+    );
+    shader.fragmentShader =
+    `
+    uniform vec3 uWaterColor;
+    ` + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'diffuseColor = vec4( diffuse, opacity );',
+      `
+      diffuseColor = vec4( diffuse * uWaterColor , opacity);
+      `
+    )
+  }
+}
+
+updateShaders(document.getElementById("render_mode").value);
+document.getElementById("render_mode").addEventListener("input", (event) => {
+  updateShaders(document.getElementById("render_mode").value);
+});
+
+// Render scene
+const clock = new THREE.Clock();
+function render() {
+  if (watershader !== null)
+  {
+    watershader.uniforms.uTime.value = clock.getElapsedTime();
+  }
+
+  renderer.render(scene, camera);
+}
+
+// Handle window resize
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', onWindowResize, false);
