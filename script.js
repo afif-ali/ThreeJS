@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const noiseshadersource = `
 vec3 mod289(vec3 x)
@@ -103,7 +103,7 @@ camera.position.set(15, 15, 15);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = false;
 controls.maxDistance = 100;
-controls.minDistance = 15;
+controls.minDistance = 1;
 controls.update();
 
 
@@ -114,13 +114,15 @@ scene.add( ambientLight );
 const directionalLight = new THREE.DirectionalLight( document.getElementById("sun_color").value, document.getElementById("sun_intensity").value);
 scene.add( directionalLight );
 
-document.getElementById("sun_color").addEventListener("input", (event) => {directionalLight.color.set(event.target.value);});
 document.getElementById("sun_intensity").addEventListener("input", (event) => {directionalLight.intensity = event.target.value;});
 
 const terrain = new THREE.Mesh();
 scene.add(terrain);
 const water = new THREE.Mesh();
 scene.add(water);
+const sun = new THREE.Mesh();
+scene.add(sun);
+document.getElementById("sun_color").addEventListener("input", (event) => {directionalLight.color.set(event.target.value);sun.material.color.set(event.target.value)});
 
 terrain.geometry = new THREE.IcosahedronGeometry(10, Math.round(document.getElementById("detail").value));
 water.geometry = new THREE.IcosahedronGeometry(10, Math.round(document.getElementById("detail").value));
@@ -130,6 +132,9 @@ document.getElementById("detail").addEventListener("input", (event) => {
   water.geometry = new THREE.IcosahedronGeometry(10, Math.round(event.target.value));
   water.geometry.needsUpdate=true;
 });
+sun.geometry = new THREE.IcosahedronGeometry(20, 12);
+sun.material = new THREE.MeshBasicMaterial({color:document.getElementById("sun_color").value});
+sun.position.set(100,50,0);
 
 let watershader = null;
 function updateShaders(render_mode) {
@@ -258,6 +263,44 @@ updateShaders(document.getElementById("render_mode").value);
 document.getElementById("render_mode").addEventListener("input", (event) => {
   updateShaders(document.getElementById("render_mode").value);
 });
+
+
+function add_star() {
+  const star_geometry = new THREE.SphereGeometry(0.25, 24, 24);
+  const star_material = new THREE.MeshBasicMaterial({ color: 0xffffff  });
+  const star = new THREE.Mesh(star_geometry, star_material);
+
+  const [x, y, z] = Array(3)
+    .fill()
+    .map(() => THREE.MathUtils.randFloatSpread(200));
+
+  star.position.set(x, y, z);
+  scene.add(star);
+}
+
+Array(200).fill().forEach(add_star);
+
+// 1. Instantiate the loader
+const loader = new GLTFLoader();
+
+// 2. Load the file from your local directory or a URL
+let shrek;
+loader.load(
+    'scene.gltf',
+    function (gltf) {
+        const model = gltf.scene; 
+        shrek = model;
+        model.position.set(-15,0,-15);
+        model.scale.set(3,3,3);
+        scene.add(model);
+    },
+    function (xhr) {
+        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },
+    function (error) {
+        console.error('An error happened while loading the model:', error);
+    }
+);
 
 // Render scene
 const clock = new THREE.Clock();
